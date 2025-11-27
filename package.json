@@ -1,0 +1,23 @@
+{
+  "name": "shot-game",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "stats.js": "^0.17.0",
+    "three": "^0.181.2",
+    "vue": "^3.5.24",
+    "vue-router": "^4.6.3"
+  },
+  "devDependencies": {
+    "@unocss/vite": "^66.5.9",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "unocss": "^66.5.9",
+    "vite": "^7.2.4"
+  }
+}

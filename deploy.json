@@ -1,0 +1,11 @@
+{
+    "prod": {
+        "remote_host": "chym",
+        "remote_dir": "/usr/share/nginx/cs-item",
+        "build_cmd": "pnpm run build",
+        "dist_dir": "dist",
+        "pre_cmd": "pwd",
+        "post_cmd": "",
+        "git_check": false
+    }
+}
