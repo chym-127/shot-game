@@ -1,13 +1,12 @@
 <template>
     <div>
         <div>
-            <div id="game-over-screen" v-if="status === 2">
-                <div v-if="status === 3">
-                    <h1>时间到！</h1>
-                    <p>你的最终得分是: <span id="final-score">0</span></p>
+            <div id="game-over-screen" v-if="status >= 2">
+                <div class="flex mb-2" style="text-align: center;" v-if="status === 3">
+                    <h1>时间到</h1>
                 </div>
                 <div class="flex gap-2">
-                    <g-button @click="startGame">继续游戏</g-button>
+                    <g-button v-if="status === 2" @click="startGame">继续游戏</g-button>
                     <g-button variant="danger" @click="restartGame">重新开始</g-button>
                 </div>
             </div>
@@ -103,7 +102,7 @@ const fadingObjects = [];
 const FADE_SPEED = 0.1;
 
 // --- 核心配置参数 ---
-const NUM_PARTICLES = 80; // 每个爆炸效果的粒子数量
+const NUM_PARTICLES = 30; // 每个爆炸效果的粒子数量
 const EXPLOSION_RANGE = 4; // 粒子扩散的最大距离
 const ANIMATION_DURATION_FRAMES = 80; // 动画总帧数 (例如：2秒)
 const PARTICLE_SIZE = 0.05;
@@ -380,8 +379,6 @@ function startGame() {
 }
 
 function endGame() {
-    console.log(endGame);
-
     if (status.value === 3) return;
     status.value = 3;
 
@@ -493,7 +490,12 @@ onMounted(() => {
     // PointerLock 解锁事件
     pointerLockControls.addEventListener('unlock', () => {
         setTimeout(() => {
-            status.value = 2
+            if (timeLeft.value <= 0) {
+                console.log('endGame');
+                status.value = 3
+            } else {
+                status.value = 2
+            }
             document.removeEventListener('mousedown', onShoot, false);
         }, 400);
     });
