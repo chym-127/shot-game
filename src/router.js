@@ -4,8 +4,13 @@ import { createRouter, createWebHistory } from 'vue-router'
 // 路由表
 const routes = [
     {
-        path: '/shot-ball',
+        path: '/',
         name: 'home',
+        component: () => import('@views/home/index.vue')
+    },
+    {
+        path: '/shot-ball',
+        name: 'shot-ball',
         component: () => import('@views/shot-ball/index.vue')
     },
 ]
