@@ -4,4 +4,14 @@ import App from './App.vue'
 import router from './router'
 import 'virtual:uno.css'
 
-createApp(App).use(router).mount('#app')
+import GButton from '@/components/GButton.vue';
+import GSettingsPanel from '@/components/GSettingsPanel.vue';
+import GSettingItem from '@/components/GSettingItem.vue';
+
+const app = createApp(App);
+
+app.component('GButton', GButton);
+app.component('GSettingsPanel', GSettingsPanel);
+app.component('GSettingItem', GSettingItem);
+
+app.use(router).mount('#app')
