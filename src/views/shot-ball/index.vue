@@ -2,16 +2,32 @@
     <div>
         <div>
             <div id="game-over-screen" v-if="status >= 2">
-                <div class="flex mb-2" style="text-align: center;" v-if="status === 3">
-                    <h1>时间到</h1>
-                </div>
+                <template v-if="status === 3">
+                    <div class="game-over-title">
+                        <span>游戏结束 (GAME OVER)</span>
+                    </div>
+
+                    <div class="stats-grid single-row-grid">
+                        <div class="stat-item">
+                            <div class="label">每分钟击杀 (KPM)</div>
+                            <div class="value primary-highlight">{{ kpm }}</div>
+                        </div>
+
+                        <div class="stat-item">
+                            <div class="label">命中率 (Accuracy)</div>
+                            <div class="value primary-highlight">{{ hit_rate }}%</div>
+                        </div>
+
+                    </div>
+                </template>
+
                 <div class="flex gap-2">
-                    <g-button v-if="status === 2" @click="startGame">继续游戏</g-button>
-                    <g-button variant="danger" @click="restartGame">重新开始</g-button>
+                    <g-button :disabled="btn_disabled" v-if="status === 2" @click="startGame">继续游戏</g-button>
+                    <g-button :disabled="btn_disabled" variant="danger" @click="restartGame">重新开始</g-button>
                 </div>
             </div>
             <div id="start-game-screen" v-if="status === 0">
-                <g-button @click="restartGame()">开始游戏</g-button>
+                <g-button :disabled="btn_disabled" @click="restartGame()">开始游戏</g-button>
             </div>
             <div id="stats-hud">
                 <div
@@ -49,7 +65,7 @@ import { onMounted, ref } from 'vue'
 import { useLocalStorage } from '@vueuse/core'
 import { emitter } from '../../eventBus.js'
 
-let scene, camera, renderer, pointerLockControls;
+let scene, camera, renderer, sunLight, pointerLockControls;
 let ballContainer, ballMesh
 let stats = new Stats();
 stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
@@ -64,9 +80,11 @@ const BALL_ROUGHNESS = 0.9; // 适中粗糙度，有一定反射
 const BALL_METALNESS = 0.3; // 有点金属感
 let balls = []
 
-const ROOM_WIDTH = 14;
+
+
+const ROOM_WIDTH = 12;
 const ROOM_HEIGHT = 5;
-const ROOM_DEPTH = 14;
+const ROOM_DEPTH = 12;
 const WALL = 'rock_wall_11'
 const WALL_TEXTURE_PATHS = getTextureUrls(WALL)
 const FLOOR = 'rock_tile_floor'
@@ -78,6 +96,7 @@ let GAME_DURATION = +settings.game_duration || 30; // 游戏持续时间（秒�
 
 let timeLeft = ref(GAME_DURATION);
 let isGameOver = ref(false);
+let btn_disabled = ref(false)
 let score = ref(0);
 let kpm = ref('')
 let hit_rate = ref('')
@@ -254,7 +273,8 @@ function animate() {
     if (status.value !== 3 && pointerLockControls.isLocked) {
         const delta = clock.getDelta(); // 获取两帧之间的时间差
         timeLeft.value -= delta;
-        kpm.value = Math.floor(hits.value / ((GAME_DURATION - timeLeft.value) / GAME_DURATION))
+
+        kpm.value = Math.floor(hits.value / ((GAME_DURATION - timeLeft.value) / 60))
         if (timeLeft.value <= 0) {
             timeLeft.value = 0;
             endGame();
@@ -356,6 +376,7 @@ function createRoomWithPBRTextures() {
 
 
 function restartGame() {
+    btn_disabled.value = true
     score.value = 0;
     shotsFired.value = 0;
     hits.value = 0;
@@ -372,6 +393,8 @@ function restartGame() {
 
 
 function startGame() {
+    btn_disabled.value = true
+
     if (!pointerLockControls.isLocked) {
         pointerLockControls.lock();
         status.value = 1
@@ -417,6 +440,7 @@ function spawnTargets(num = 5) {
 }
 let soundShot = null
 let soundBalloon = null
+let soundEnd = null
 
 function onShoot(event) {
     if (event.button === 0 && pointerLockControls.isLocked) { // 仅在 FPS 模式且左键点击时
@@ -438,11 +462,9 @@ function onShoot(event) {
             hits.value++;
             score.value += 10; // 每次命中加 10 分
 
-            hit_rate.value = ((hits.value / shotsFired.value) * 100).toFixed(2)
             // ⭐ 调用创建爆炸效果函数 ⭐
             // 移除被击中的球体
             generateExplosion(hitTarget.position)
-
             scene.remove(hitTarget);
 
             if (soundBalloon && soundBalloon.buffer) {
@@ -455,24 +477,27 @@ function onShoot(event) {
             hitTarget.geometry.dispose();
             hitTarget.material.dispose();
 
-
             balls = balls.filter(target => target !== hitTarget);
             spawnSingleTarget();
-        } else {
-            console.log('Miss!');
         }
+
+        hit_rate.value = ((hits.value / shotsFired.value) * 100).toFixed(2)
+
     }
 }
 
 onMounted(() => {
     document.body.appendChild(stats.dom);
-    [scene, camera, renderer] = useBaseScene('threejs-wrap', animate)
+    [scene, camera, renderer, sunLight] = useBaseScene('threejs-wrap', animate)
     setupEnvironment(ENV_URL, scene)
     pointerLockControls = usePointerLockControls({ scene, camera, renderer })
     pointerLockControls.pointerSpeed = settings.sensitivity
     // PointerLock 锁定事件
     pointerLockControls.addEventListener('lock', () => {
-        console.log('lock');
+        if (soundEnd && soundEnd.buffer && soundEnd.isPlaying) {
+            soundEnd.stop();
+        }
+        btn_disabled.value = false
         // 锁定后隐藏菜单和提示
         document.addEventListener('mousedown', onShoot, false);
     });
@@ -487,15 +512,28 @@ onMounted(() => {
             soundBalloon = resp
         }, fail: () => { }
     })
+
+    loadSounds('https://cs2-file.chym.site/shot-game/sound/gameend.mp3', {
+        camera: camera, success: (resp) => {
+            soundEnd = resp
+        }, fail: () => { }
+    })
+
     // PointerLock 解锁事件
     pointerLockControls.addEventListener('unlock', () => {
         setTimeout(() => {
             if (timeLeft.value <= 0) {
-                console.log('endGame');
+                if (soundEnd && soundEnd.buffer) {
+                    if (soundEnd.isPlaying) {
+                        soundEnd.stop();
+                    }
+                    soundEnd.play();
+                }
                 status.value = 3
             } else {
                 status.value = 2
             }
+            btn_disabled.value = false
             document.removeEventListener('mousedown', onShoot, false);
         }, 400);
     });
@@ -634,5 +672,78 @@ onMounted(() => {
     font-size: 20px;
     font-weight: bold;
     text-shadow: 1px 1px 2px black;
+}
+
+
+.game-over-title {
+    font-size: 36px;
+    font-weight: 900;
+    margin-bottom: 25px;
+    color: #ff3333;
+    text-shadow: 0 0 10px rgba(255, 51, 51, 0.8);
+    transition: color 0.3s;
+}
+
+.game-over-title span:first-child {
+    color: #00ffff;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+}
+
+.status-message {
+    font-size: 18px;
+    margin-bottom: 30px;
+    color: #aaaaaa;
+}
+
+.new-record {
+    color: #ffaa00;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(255, 170, 0, 0.5);
+}
+
+/* --- 成绩网格布局 (调整为只有 1 行 2 列) --- */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    /* 行间距和列间距 */
+    margin-bottom: 30px;
+    padding: 10px;
+    border: 1px dashed #333;
+    border-radius: 5px;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.label {
+    font-size: 14px;
+    color: #aaaaaa;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.value {
+    font-size: 32px;
+    /* 稍微放大，突出仅有的两个数据 */
+    font-weight: bold;
+    line-height: 1.2;
+}
+
+.primary-highlight {
+    color: #ffaa00;
+    text-shadow: 0 0 8px rgba(255, 170, 0, 0.6);
+}
+
+/* --- 次要数据样式 --- */
+.secondary-stats {
+    font-size: 14px;
+    color: #aaaaaa;
+    margin-bottom: 30px;
+}
+
+.secondary-item {
+    padding: 0 10px;
 }
 </style>

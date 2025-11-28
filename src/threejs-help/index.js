@@ -26,26 +26,26 @@ export const useBaseScene = (elId) => {
     // 光照
     // scene.add(new THREE.AmbientLight(0xffffff, 0.5));
     // **关键步骤 2: 聚光灯或方向光 (产生阴影)**
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(10, 15, 10); // 灯光位置
-    directionalLight.target.position.set(0, 0, 0); // 灯光指向房间中心
+    const sunLight = new THREE.DirectionalLight(0xffffff, 1);
+    sunLight.position.set(10, 15, 10); // 灯光位置
+    sunLight.target.position.set(0, 0, 0); // 灯光指向房间中心
 
     // **关键步骤 2a: 启用灯光投射阴影**
-    directionalLight.castShadow = true;
+    sunLight.castShadow = true;
 
     // **关键步骤 2b: 配置阴影属性 (重要!)**
     // 调整阴影相机边界，确保房间完全在阴影相机的视野内，以避免阴影被裁剪。
     const d = 15; // 阴影相机的投影范围
-    directionalLight.shadow.camera.left = -d;
-    directionalLight.shadow.camera.right = d;
-    directionalLight.shadow.camera.top = d;
-    directionalLight.shadow.camera.bottom = -d;
-    directionalLight.shadow.camera.near = 0.5; // 最小距离
-    directionalLight.shadow.camera.far = 50;  // 最大距离
-    directionalLight.shadow.mapSize.width = 1024; // 阴影贴图分辨率
-    directionalLight.shadow.mapSize.height = 1024; // 阴影贴图分辨率
+    sunLight.shadow.camera.left = -d;
+    sunLight.shadow.camera.right = d;
+    sunLight.shadow.camera.top = d;
+    sunLight.shadow.camera.bottom = -d;
+    sunLight.shadow.camera.near = 0.5; // 最小距离
+    sunLight.shadow.camera.far = 50;  // 最大距离
+    sunLight.shadow.mapSize.width = 1024; // 阴影贴图分辨率
+    sunLight.shadow.mapSize.height = 1024; // 阴影贴图分辨率
 
-    scene.add(directionalLight);
+    scene.add(sunLight);
 
     function onWindowResize() {
         camera.aspect = window.innerWidth / window.innerHeight;
@@ -59,7 +59,7 @@ export const useBaseScene = (elId) => {
         window.removeEventListener('resize', onWindowResize);
     })
 
-    return [scene, camera, renderer]
+    return [scene, camera, renderer, sunLight]
 }
 
 export const useOrbitControls = ({ scene, camera, renderer }) => {
