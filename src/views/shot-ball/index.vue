@@ -35,11 +35,11 @@
                     <div style="font-size: 24px; margin-bottom: 10px;">
                         KPM : <span style="color: #4CAF50;">{{ kpm }}</span>
                     </div>
-                    <div style="font-size: 20px; margin-bottom: 20px;">
+                    <div style="font-size: 20px; margin-bottom: 10px;">
                         命中: <span style="color: #FF5722;">{{ hits }}/{{ shotsFired }}</span><span
                             style="color: #cccccc;">({{ hit_rate }}%)</span>
                     </div>
-                    <div style="background-color: rgba(0, 0, 0, 0.7); padding: 10px; border-radius: 5px; font-size: 20px;">
+                    <div style="font-size: 20px;">
                         倒计时: <span style="color: #cccccc;">{{ timeLeft.toFixed(2) }}s</span>
                     </div>
                 </div>
@@ -265,6 +265,7 @@ function updateExplosion() {
         explosion.material.opacity = Math.max(0, opacityProgress);
     }
 }
+
 
 function animate() {
     stats.begin();
@@ -642,10 +643,9 @@ onMounted(() => {
 /* ⭐ 统计信息 HUD 样式 ⭐ */
 #stats-hud {
     position: absolute;
-    bottom: 60px;
-    width: 450px;
-    left: 50%;
-    transform: translateX(-50%);
+    top: 20px;
+    width: 200px;
+    right: 20px;
     z-index: 10;
     padding: 10px;
     color: white;
