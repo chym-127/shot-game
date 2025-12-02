@@ -550,7 +550,7 @@ onMounted(() => {
         // 锁定后隐藏菜单和提示
         document.addEventListener('mousedown', onShoot, false);
     });
-    loadSounds('https://cs2-file.chym.site/shot-game/sound/shot.mp3', {
+    loadSounds('https://cs2-file.chym.site/shot-game/sound/usp_01.wav', {
         camera: camera, success: (resp) => {
             soundShot = resp
         }, fail: () => { }

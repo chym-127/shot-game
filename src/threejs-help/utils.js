@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
 
 export const loadSounds = (url, {
-    camera, success, fail
+    camera, success, volume = 0.3, fail
 }) => {
     // 创建音频监听器并添加到相机
     let listener = new THREE.AudioListener();
@@ -12,7 +12,7 @@ export const loadSounds = (url, {
     audioLoader.load(url, function (buffer) {
         sound.setBuffer(buffer);
         sound.setLoop(false);
-        sound.setVolume(0.5); // 设置音量
+        sound.setVolume(volume); // 设置音量
         success(sound)
     }, undefined, function (error) {
         fail(error)
