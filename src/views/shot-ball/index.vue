@@ -104,9 +104,9 @@ function saveSetting() {
     localStorage.setItem('settings', JSON.stringify(settings))
     showSetting.value = false
     BALL_RADIUS = settings.ball_size
-    if (GAME_DURATION.value != settings.game_duration) {
-        GAME_DURATION.value = settings.game_duration
-        timeLeft.value = GAME_DURATION.value
+    if (GAME_DURATION != settings.game_duration) {
+        GAME_DURATION = settings.game_duration
+        timeLeft.value = GAME_DURATION
         status.value = 0
     }
     if (pointerLockControls && settings.sensitivity) {
