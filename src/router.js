@@ -1,18 +1,12 @@
-// src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
 
 // 路由表
 const routes = [
     {
         path: '/',
-        name: 'home',
-        component: () => import('@views/home/index.vue')
-    },
-    {
-        path: '/shot-ball',
         name: 'shot-ball',
         component: () => import('@views/shot-ball/index.vue')
-    },
+    }
 ]
 
 // 创建 Router 实例

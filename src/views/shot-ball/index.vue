@@ -29,6 +29,10 @@
             <div id="start-game-screen" v-if="status === 0">
                 <g-button :disabled="btn_disabled" @click="restartGame()">开始游戏</g-button>
             </div>
+
+            <div id="settings">
+                <g-button variant='pixel' @click="showSetting = true">设置</g-button>
+            </div>
             <div id="stats-hud">
                 <div
                     style="font-family: Arial, sans-serif; color: white; background-color: rgba(0, 0, 0, 0.5); padding: 15px; border-radius: 8px; width: 100%; text-align: center;">
@@ -50,6 +54,25 @@
             </div>
 
         </div>
+
+        <GModal :visible="showSetting" @update:visible="showSetting = $event" title="🏆 游戏设置" :width="'750px'"
+            :closable="true" :maskClosable="true">
+            <div>
+                <GSettingItem label="用户名" type="text" v-model="settings.username" placeholder="输入您的角色名称" />
+                <GSettingItem label="鼠标灵敏度" type="number" v-model="settings.sensitivity" placeholder="0.1 - 2.0" />
+                <GSettingItem label="每局游戏时长" type="number" v-model="settings.game_duration" placeholder="秒" />
+                <GSettingItem label="小球大小" type="number" v-model="settings.ball_size" placeholder="1-10" />
+            </div>
+
+            <template #footer>
+                <GButton variant="primary" @click="saveSetting">
+                    保存
+                </GButton>
+                <GButton class="ml-2" variant="secondary" @click="showSetting = false">
+                    取消
+                </GButton>
+            </template>
+        </GModal>
         <div id="threejs-wrap" class="w-screen h-screen">
         </div>
     </div>
@@ -61,20 +84,45 @@ import * as THREE from 'three';
 import Stats from 'stats.js'
 import { useBaseScene, usePointerLockControls } from '@/threejs-help/index.js'
 import { createPbrMaterial, setupEnvironment, findValidPlacementPoint, loadSounds } from '@/threejs-help/utils.js'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, reactive } from 'vue'
 import { useLocalStorage } from '@vueuse/core'
 import { emitter } from '../../eventBus.js'
+
+let showSetting = ref(false);
+
+const settings = reactive({
+    username: '',
+    sensitivity: 1,
+    game_duration: 30,
+    ball_size: 3
+})
+let str = localStorage.getItem('settings')
+if (str) {
+    Object.assign(settings, JSON.parse(str))
+}
+function saveSetting() {
+    localStorage.setItem('settings', JSON.stringify(settings))
+    showSetting.value = false
+    BALL_RADIUS = settings.ball_size
+    if (GAME_DURATION.value != settings.game_duration) {
+        GAME_DURATION.value = settings.game_duration
+        timeLeft.value = GAME_DURATION.value
+        status.value = 0
+    }
+    if (pointerLockControls && settings.sensitivity) {
+        pointerLockControls.pointerSpeed = settings.sensitivity
+    }
+}
+
 
 let scene, camera, renderer, sunLight, pointerLockControls;
 let ballContainer, ballMesh
 let stats = new Stats();
 stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
-const settings = JSON.parse(useLocalStorage('settings').value) // key, 默认值
-settings.game_duration = +settings.game_duration
 
 
 // ⭐ 球体颜色和 PBR 属性 ⭐
-const BALL_RADIUS = 0.3; // 球体半径
+let BALL_RADIUS = settings.ball_size / 10; // 球体半径
 const BALL_COLOR = 0xfbc531; // 暗红色
 const BALL_ROUGHNESS = 0.9; // 适中粗糙度，有一定反射
 const BALL_METALNESS = 0.3; // 有点金属感
@@ -522,39 +570,24 @@ onMounted(() => {
 
     // PointerLock 解锁事件
     pointerLockControls.addEventListener('unlock', () => {
-        setTimeout(() => {
-            if (timeLeft.value <= 0) {
-                if (soundEnd && soundEnd.buffer) {
-                    if (soundEnd.isPlaying) {
-                        soundEnd.stop();
-                    }
-                    soundEnd.play();
+        if (timeLeft.value <= 0) {
+            if (soundEnd && soundEnd.buffer) {
+                if (soundEnd.isPlaying) {
+                    soundEnd.stop();
                 }
-                status.value = 3
-            } else {
-                status.value = 2
+                soundEnd.play();
             }
+            status.value = 3
+        } else {
+            status.value = 2
+        }
+        document.removeEventListener('mousedown', onShoot, false);
+        setTimeout(() => {
             btn_disabled.value = false
-            document.removeEventListener('mousedown', onShoot, false);
-        }, 400);
+        }, 1000);
     });
     createRoomWithPBRTextures()
     animate()
-
-
-    emitter.on('settingsChanged', (v) => {
-        if (pointerLockControls && v.sensitivity) {
-            pointerLockControls.pointerSpeed = v.sensitivity
-        }
-
-        if (v.game_duration) {
-            GAME_DURATION = +v.game_duration
-            timeLeft.value = GAME_DURATION
-            status.value = 0
-        }
-
-        Object.assign(settings, v)
-    })
 })
 </script>
 
@@ -579,7 +612,7 @@ onMounted(() => {
 
 /* 水平线 */
 #crosshair .horizontal-line {
-    width: 9px;
+    width: 5px;
     /* 总长度 */
     height: 1px;
     /* 粗细 */
@@ -594,7 +627,7 @@ onMounted(() => {
 #crosshair .vertical-line {
     width: 1px;
     /* 粗细 */
-    height: 9px;
+    height: 5px;
     /* 总长度 */
     /* 相对于 #simple-crosshair 容器居中 */
     left: 50%;
@@ -672,6 +705,13 @@ onMounted(() => {
     font-size: 20px;
     font-weight: bold;
     text-shadow: 1px 1px 2px black;
+}
+
+#settings {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 9999;
 }
 
 
